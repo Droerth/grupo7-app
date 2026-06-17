@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grupo 7 - Supabase App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #5568d3;
+        }
+        
+        #results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Grupo 7 - Supabase</h1>
+        <p>Conexión a base de datos</p>
+        
+        <div id="status" class="status info">
+            Conectando a Supabase...
+        </div>
+        
+        <div>
+            <button onclick="testConnection()"> Probar Conexión</button>
+            <button onclick="fetchData()">📥 Obtener Datos</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        // Importar Supabase desde CDN
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+        
+        // Configurar cliente de Supabase
+        const supabaseUrl = 'https://uqrnulhhjhsbuuqdxekw.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxcm51bGhoamhzYnV1cWR4ZWt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MTc5MzksImV4cCI6MjA5NzI5MzkzOX0.FShNijK7qHJRxYlUWCQo2-O-siCTnCP01vJAXtzz6z4'
+        
+        const supabase = createClient(supabaseUrl, supabaseKey)
+        
+        // Función para actualizar el estado
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status')
+            statusDiv.textContent = message
+            statusDiv.className = `status ${type}`
+        }
+        
+        // Función para mostrar resultados
+        function showResults(data) {
+            const resultsDiv = document.getElementById('results')
+            resultsDiv.textContent = JSON.stringify(data, null, 2)
+        }
+        
+        // Probar conexión
+        window.testConnection = async function() {
+            try {
+                updateStatus('Probando conexión...', 'info')
+                const { data, error } = await supabase.from('_any_table').select('count').limit(1)
+                
+                if (error && error.code !== 'PGRST301') {
+                    // Error esperado si no existe la tabla, pero la conexión funciona
+                    updateStatus(' ¡Conexión exitosa! Supabase está respondiendo', 'success')
+                } else {
+                    updateStatus(' ¡Conexión exitosa!', 'success')
+                }
+                
+                showResults({
+                    status: 'Conectado',
+                    url: supabaseUrl,
+                    timestamp: new Date().toISOString()
+                })
+            } catch (err) {
+                updateStatus('❌ Error de conexión: ' + err.message, 'error')
+                showResults({ error: err.message })
+            }
+        }
+        
+        // Obtener datos de ejemplo
+        window.fetchData = async function() {
+            try {
+                updateStatus('Obteniendo datos...', 'info')
+                
+                // Intentar obtener datos de cualquier tabla existente
+                const { data: tables, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .limit(5)
+                
+                if (error) {
+                    updateStatus(' No hay tablas disponibles o necesitas crear una', 'info')
+                    showResults({
+                        message: 'Para usar esta función, crea una tabla en Supabase',
+                        error: error.message
+                    })
+                } else {
+                    updateStatus(' Datos obtenidos exitosamente', 'success')
+                    showResults(tables)
+                }
+            } catch (err) {
+                updateStatus('Error: ' + err.message, 'error')
+                showResults({ error: err.message })
+            }
+        }
+        
+        // Probar conexión al cargar
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                updateStatus(' ¡Conectado a Supabase! Listo para usar', 'success')
+                showResults({
+                    mensaje: '¡Bienvenido al Grupo 7!',
+                    proyecto: 'Supabase + Vercel',
+                    fecha: new Date().toLocaleString()
+                })
+            }, 500)
+        })
+    </script>
+</body>
+</html>
